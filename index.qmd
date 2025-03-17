@@ -194,54 +194,9 @@ emissions_long_1990_2022.describe()
 fig_map.show()
 ```
 
-```{python}
-# Convert country names to ISO3 codes
-emissions_long_subset["country_code"] = coco.convert(
-    emissions_long_subset["country"], to="ISO3"
-)
-
-fig_map_2 = px.choropleth(
-    emissions_long_subset,
-    locations="country_code",
-    color="emissions",
-    hover_name="country",
-    animation_frame="year",
-    title="Global CO2 Emissions (1990-2022)",
-)
-
-fig_map_2.show()
 
 
-```
 
-
-```{python}
-import plotly.express as px
-
-fig_map = px.choropleth(
-    emissions_long_1990_2022,
-    locations="country_code",
-    color="emissions",
-    hover_name="country",
-    animation_frame="year",
-    title="Global CO2 Emissions (1990-2022)",
-    color_continuous_scale="Viridis"  # You can choose a different color scale
-)
-
-tickvals = np.linspace(-2.17, 10600, 50)
-
-# Modify the colorbar to have more divisions
-fig_map.update_coloraxes(
-    colorbar=dict(
-        tickmode="array",  # This allows you to specify custom tick values
-        tickvals= tickvals,  # Example tick values, adjust as needed
-        ticktext=["0", "50", "100", "150", "200", "250"]  # Corresponding text for the ticks
-    )
-)
-
-fig_map.show()
-
-```
 
 
 # Final Tabset
@@ -266,6 +221,7 @@ fig_chart.show()
 
 ```{python}
 fig_map.show()
+
 ```
 
 :::
