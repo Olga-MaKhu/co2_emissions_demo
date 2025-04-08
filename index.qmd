@@ -32,20 +32,29 @@ Be sure to view that page to get an idea of the final product.
 Run the following code to import the necessary libraries:
 
 ```{python}
+# | echo: false
 import pandas as pd
 import numpy as np
 import plotly.express as px
 from itables import show
 import country_converter as coco
+
+pd.options.mode.copy_on_write = True
+
+import warnings
+
+warnings.filterwarnings("ignore")
 ```
 
 Load in your dataset from gapminder below. View it in your data viewer to get an idea of the structure.
 
 ```{python}
+# | echo: false
 # Load the data
+
 emissions = pd.read_csv("data/co2_cons.csv")
 
-emissions
+# emissions
 ```
 
 # Initial Cleaning
@@ -55,7 +64,11 @@ In this dataset, some values are given in thousands, with a "k" used to represen
 First, let's see the issue:
 
 ```{python}
-emissions.query("country == 'China'")[["country",  "2020", "2021", "2022"]]
+# | echo: false
+# | eval: false
+
+emissions.query("country == 'China'")[["country", "2020", "2021", "2022"]]
+
 ```
 
 Notice the letter "k" at the end of "10.6k" as an example.
@@ -63,6 +76,9 @@ Notice the letter "k" at the end of "10.6k" as an example.
 We can remove the "k" and multiply those values by 1000 with the following code:
 
 ```{python}
+# | echo: false
+
+
 for col in ["2021", "2022"]:
     has_k = emissions[col].str.contains("k")
     values = emissions[col].str.replace("k", "")
@@ -72,6 +88,8 @@ for col in ["2021", "2022"]:
 And check that it worked:
 
 ```{python}
+#| echo: false
+#| eval: false
 emissions.query("country == 'China'")[["country",  "2020", "2021", "2022"]]
 ```
 
@@ -84,31 +102,46 @@ Our goal is to create a table showing emissions for a few selected years and cal
 3. Calculate a "Relative Change" column as the absolute change divided by the 2000 emissions, then multiplied by 100.
 
 ```{python}
+# | echo: false
+
+
 # Subset the data to include `country`, `2000`, and `2022` columns only.
 table_df = emissions[["country", "2000", "2022"]]
 
+# table_df
+
+
+
+#print(table_df.dtypes)
+
+# Changing the value types to integers:
 
 
 # Calculate absolute change as the difference between 2022 and 2000
-table_df["Absolute Change"] = table_df["2022"] - table_df["2000"]
-
+table_df.loc[:, ("Absolute Change")] = table_df["2022"] - table_df["2000"]
 
 
 # Calculate relative change as the absolute change divided by the 2000 emissions, then multiplied by 100
-table_df["Relative Change"] = (table_df["Absolute Change"]/table_df["2000"])*100
-
+table_df.loc[:, ("Relative Change")] = (
+    table_df["Absolute Change"] / table_df["2000"]
+) * 100
 
 
 # Round to 0 decimal places, and add a % sign to the relative change
 table_df["Relative Change"] = table_df["Relative Change"].round(0).astype(str) + "%"
-table_df
+
+
+# table_df
 
 ```
 
 Now we can display this as an interactive table with itables:
 
 ```{python}
-show(table_df)
+# | echo: false
+
+#show(table_df)
+
 ```
 
 # Chart Section
@@ -121,44 +154,79 @@ Our goal is to create a line chart from 1990 to 2022 for a few selected countrie
 4. Create a line chart showing emissions over time for the selected countries with Plotly Express.
 
 ```{python}
+# | echo: false
+# | output: false
+
+
 # Melt the original `emissions` dataset. Your id_vars should be "country", your var_name should be "year" and your value_name should be "emissions".
+
 emissions_long = emissions.melt(
-    id_vars=(["country"]), 
-    var_name = "year", 
-    value_name = "emissions"
+    id_vars=(["country"]), var_name="year", value_name="emissions"
 )
 
-emissions_long
+# emissions_long
 
 # Convert year to numeric using pd.to_numeric
 emissions_long["year"] = emissions_long["year"].astype(int)
 
-emissions_long
+# emissions_long
 
 # Convert emissions to numeric using pd.to_numeric. Here, we also convert dashes to the minus sign
-emissions_long["emissions"] = pd.to_numeric(emissions_long["emissions"].astype(str).str.replace("−", "-"))
+emissions_long["emissions"] = pd.to_numeric(
+    emissions_long["emissions"].astype(str).str.replace("−", "-")
+)
 
-emissions_long
+# emissions_long
 
 # Query for years between 1990 and 2022 (that is 1990, 1991, ..., 2021, 2022)
 emissions_long_1990_2022 = emissions_long.query("year >= 1990 and  year <= 2022")
 
-emissions_long_1990_2022
+# emissions_long_1990_2022
 
 # Query for 5 countries (adjust these to any countries you like)
-emissions_long_subset = emissions_long_1990_2022.query("country.isin(['Kenya','Nigeria','Egypt','South Africa','Ghana'])")
+emissions_long_subset = emissions_long_1990_2022.query(
+    "country.isin(['Algeria','Egypt','Ethiopia','Nigeria','South Africa'])"
+)
 
-emissions_long_subset.sort_values("country")
+# emissions_long_subset.sort_values("country")
+
+
+```
+
+```{python}
+# | echo: false
+# | output: false
+
 
 # Create line chart. Year should be on the x-axis, emissions on the y-axis, and color should be by country.
 fig_chart = px.line(
-    emissions_long_subset, 
-    x = "year", 
-    y = "emissions", 
-    color = "country" 
+    emissions_long_subset,
+    x="year",
+    y="emissions",
+    color="country",
+    title="Annual CO2 Emissions (1990-2022): A Focus on Egypt, Ghana, Kenya, Nigeria and South Africa",
+    labels={
+        "year": "YEAR",
+        "emissions": "Carbon Dioxide Total Emission (In Mil Tonnes per capita)",
+    },
+    markers=True,
 )
 
-fig_chart
+for country in emissions_long_subset["country"].unique():
+    subset = emissions_long_subset[emissions_long_subset["country"] == country]
+    last_point = subset.iloc[-1]  # Grab the last point for the country
+    fig_chart.add_annotation(
+        x=last_point["year"],
+        y=last_point["emissions"],
+        text=country,
+        showarrow=False,
+        xshift=30,
+    )
+
+fig_chart.update_layout(showlegend=False)
+
+
+# fig_chart
 
 ```
 
@@ -175,6 +243,13 @@ This will be animated by year.
 2. Create a map with `px.choropleth` and use `animation_frame` to show changes over time.
 
 ```{python}
+# | echo: false
+# | output: false
+
+import warnings
+
+warnings.filterwarnings("ignore")
+
 # Convert country names to ISO3 codes
 emissions_long_1990_2022["country_code"] = coco.convert(
     emissions_long_1990_2022["country"], to="ISO3"
@@ -189,9 +264,9 @@ fig_map = px.choropleth(
     title="Global CO2 Emissions (1990-2022)",
 )
 
-emissions_long_1990_2022.describe()
+# emissions_long_1990_2022.describe()
 
-fig_map.show()
+# fig_map.show()
 ```
 
 
@@ -208,18 +283,24 @@ Below, we place our results into a tabbed interface.
 ## Table
 
 ```{python}
+# | echo: false
+print("GLOBAL CARBON DIOXIDE EMISSION (1990 - 2022)")
 show(table_df)
 ```
 
 ## Chart
 
 ```{python}
+#| echo: false
+
 fig_chart.show()
 ```
 
 ## Map
 
 ```{python}
+# | echo: false
+
 fig_map.show()
 
 ```
